@@ -5,10 +5,10 @@ Sensu notification REST API handler. This documentation is work-in-progress
 Features
 --------
   - accepts JSON event objects directly from sensu
-  - configurable notification groups with any number of SLA sub-groups including renotification interval per each
+  - configurable notification groups with any number of SLA sub-groups including renotification interval per each and timeperiods per day of week
   - two types of notifications
     - duty notifications
-      - high-priority notifications (state changes CRITICAL -> OK, * -> CRITICAL )
+      - high-priority notifications (state changes `CRITICAL -> OK`, `* -> CRITICAL` )
       - mapped to SMS sending command (configurable shell command)
     - report notifications
       - all priority notifications
@@ -30,9 +30,9 @@ Prerequisities
 
 Installation
 ------------
-  - clone this repo
-  - create config/notifu.yaml from example
-  - create at least one group (config/groups/group_name.yaml)
+  - clone this repo and chdir into it
+  - create `config/notifu.yam` from example
+  - create at least one group (`config/groups/group_name.yaml`)
   - run `bundle install`
   - run `bundle exec ruby run.rb &`
   - put following configuration in Sensu's config.json:
