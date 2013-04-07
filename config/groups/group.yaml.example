@@ -1,0 +1,48 @@
+# YAML Config file (watch your syntax)
+---
+"members":
+  "johndoe":
+    "name": "John Doe"
+    "cell": "+10123456789"
+    "mail": "john.doe@somedomain.com"
+  "janedoe":
+    "name": "Jane Doe"
+    "cell": "+10987654321"
+    "mail": "jane.doe@somedomain.com"
+"fallback_members":
+  "duty":
+    - "johndoe"
+  "report":
+    - "johndoe"
+    - "janedoe"
+"sla":
+  "2":
+    "timeranges":
+      - "00:00-23:59"
+      - "00:00-23:59"
+      - "00:00-23:59"
+      - "00:00-23:59"
+      - "00:00-23:59"
+      - "00:00-23:59"
+      - "00:00-23:59"
+    "renotification_interval": 3600
+  "1":
+    "timeranges":
+      - "08:00-21:59"
+      - "08:00-21:59"
+      - "08:00-21:59"
+      - "08:00-21:59"
+      - "08:00-21:59"
+      - "10:00-22:59"
+      - "10:00-22:59"
+    "renotification_interval": 3600
+  "0":
+    "timeranges":
+      - "NULL"
+      - "NULL"
+      - "NULL"
+      - "NULL"
+      - "NULL"
+      - "NULL"
+      - "NULL"
+    "renotification_interval": 7200

@@ -1,0 +1,6 @@
+*.DS_Store
+log/*
+Gemfile.lock
+notifu.sublime-*
+config/notifu.yaml
+config/groups/*.yaml

@@ -1,0 +1,11 @@
+# YAML Config file (watch your syntax)
+---
+"redis_host": "somehost.domain"
+"redis_port": "6379"
+"sensu_api_host": "somehost.domain"
+"sensu_api_port": "4567"
+"mail_from": "notifu@somedomain.com"
+"mail_pass": "somepass"
+"mail_template": "mail.erb"
+"debug": false
+"sms_command": "echo \'<%= number %>--<%= text %>\' | nc somehost.domain someport"
