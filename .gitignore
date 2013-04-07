@@ -1,5 +1,5 @@
 *.DS_Store
-log/*
+log/*log
 Gemfile.lock
 notifu.GITHUB.sublime-*
 config/notifu.yaml
