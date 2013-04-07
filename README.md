@@ -20,6 +20,14 @@ Features
   - self-healing service: if Redis, gets somehow empty, no need for restarts
   - a lot of information can be queried via API
 
+Screenshots
+-----------
+"cuz seeing is believing"
+==== E-mail report ====
+![e-mail report](report.png "e-mail report")
+==== Duty SMS notification ====
+![duty SMS notification](duty_notification.png "duty SMS notification")
+
 Prerequisities
 ---------------
   - running Sensu architecture
