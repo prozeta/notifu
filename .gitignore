@@ -1,6 +1,6 @@
 *.DS_Store
 log/*
 Gemfile.lock
-notifu.sublime-*
+notifu.GITHUB.sublime-*
 config/notifu.yaml
 config/groups/*.yaml

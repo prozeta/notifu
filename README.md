@@ -14,7 +14,7 @@ Installation
 ------------
   - clone this repo
   - create config/notifu.yaml from example
-  - create at least one group (config/groups/_group_name>_.yaml)
+  - create at least one group (config/groups/group_name.yaml)
   - run `bundle install`
   - run `bundle exec ruby run.rb &`
   - put following configuration in Sensu's config.json:
