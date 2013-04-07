@@ -14,6 +14,7 @@ Features
       - all priority notifications
       - mapped to mail feature
       - disregards duty timeperiods
+      - (mail is sent via authenticated gmail SMTP for now...)
   - any check can notify multiple groups
   - any group members (both reporting and duty notifications) can be set via REST API
   - self-healing service: if Redis, gets somehow empty, no need for restarts
