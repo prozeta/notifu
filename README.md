@@ -2,6 +2,23 @@ Notifu
 ======
 Sensu notification REST API handler. This documentation is work-in-progress
 
+Features
+--------
+  - accepts JSON event objects directly from sensu
+  - configurable notification groups with any number of SLA sub-groups including renotification interval per each
+  - two types of notifications
+    - duty notifications
+      - high-priority notifications (state changes CRITICAL -> OK, * -> CRITICAL )
+      - mapped to SMS sending command (configurable shell command)
+    - report notifications
+      - all priority notifications
+      - mapped to mail feature
+      - disregards duty timeperiods
+  - any check can notify multiple groups
+  - any group members (both reporting and duty notifications) can be set via REST API
+  - self-healing service: if Redis, gets somehow empty, no need for restarts
+  - a lot of information can be queried via API
+
 Prerequisities
 ---------------
   - running Sensu architecture
