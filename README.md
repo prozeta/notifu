@@ -22,7 +22,7 @@ Features
 
 Screenshots
 -----------
-//"cuz seeing is believing"//
+*"cuz seeing is believing"*
 
 E-mail report
 
