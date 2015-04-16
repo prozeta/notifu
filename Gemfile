@@ -1,9 +1,14 @@
+#ruby=ruby-2.1.1
+#ruby-gemset=notifu
+
 source 'https://rubygems.org'
-gem 'mail'
-gem 'redis'
-gem 'sinatra'
-gem 'json'
-gem 'colorize'
-gem 'rest-client'
+
+gem 'sidekiq'
+gem 'configuration'
+gem 'elasticsearch'
+gem 'ohm'
+gem 'grape'
 gem 'thin'
-gem 'rake'
+gem 'thor'
+gem 'activesupport'
+gem 'log4r'

@@ -1,11 +1,48 @@
 # YAML Config file (watch your syntax)
 ---
-"redis_host": "somehost.domain"
-"redis_port": "6379"
-"sensu_api_host": "somehost.domain"
-"sensu_api_port": "4567"
-"mail_from": "notifu@somedomain.com"
-"mail_pass": "somepass"
-"mail_template": "mail.erb"
-"debug": false
-"sms_command": "echo \'<%= number %>--<%= text %>\' | nc somehost.domain someport"
+# Redis-backed data model. Connection string is defined the following way:
+# redis://<host>:<port>/<db_num>
+redis_data: "redis://localhost:6379/1"
+
+# Redis-backed sidekiq queues. Connection string is defined the following
+# way: redis://<host>:<port>/<db_num>
+redis_queues: "redis://localhost:6379/2"
+
+# Actor configuration
+actors:
+
+  smtp:
+    from: "notifu@domain.com"
+    method: sendmail
+    # pass: somepass
+
+  gammu_sms_bridge:
+    host: 10077
+    port: "mother.prz"
+
+  twilio_call:
+    script_path: "/usr/local/bin/twilio_call.py"
+
+# Logging configuration
+logging:
+
+  # Minimum log level
+  level: info
+
+  # Syslog logging
+  syslog:
+
+    # When disabled, all log messages up to LOG_WARN level (included) are piped
+    # to STDOUT. Anything from LOG_ERR higher is piped to STDERR.
+    enabled: true
+
+  # elasticsearch config
+  elasticsearch:
+
+    # When disabled, all log messages are piped to STDOUT.
+    enabled: true
+
+    # Array that defines ElasticSearch connection pool. The syntax is just a list
+    # of <host>:<port> array elements.
+    conn:
+     - "localhost:9200"
