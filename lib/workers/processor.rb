@@ -61,7 +61,6 @@ module Notifu
         begin
           group = Notifu::Model::Group.with(:name, gs[:group])
           sla = Notifu::Model::Sla.with(:name, gs[:sla])
-          duty = group.members
         rescue
           log "info", "#{self.event.notifu_id} [#{self.event.host}/#{self.event.service}/#{self.event.code.to_state}]: Object init failed. Is Notifu API running?"
           next

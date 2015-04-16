@@ -29,11 +29,11 @@ module Notifu
       def actor
         if ! options[:actor]
           puts "No actor name specified! Available actors:"
-          Dir[$actorpath + "*/actor.rb"].each do |name|
-            puts name.gsub(/.*actors\/([a-zA-Z0-9_]+)\/actor.rb/, "  \\1")
+          Dir[$actorpath + "*.rb"].each do |name|
+            puts name.gsub(/.*\/([a-zA-Z0-9_]+)\.rb/, "  \\1")
           end
         else
-          if File.exists?($actorpath + options[:actor] + "/actor.rb") then
+          if File.exists?($actorpath + options[:actor] + ".rb") then
             puts "Starting #{options[:concurrency].to_s} '#{options[:actor]}' actor(s)"
             system("bundle exec sidekiq -c " + options[:concurrency].to_s + " -r " + $basepath + "workers/actor.rb -q actor-" + options[:actor])
           else

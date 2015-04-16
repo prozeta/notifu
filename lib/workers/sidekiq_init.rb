@@ -15,8 +15,12 @@ requires << basepath + "mixins.rb"
 requires << basepath + "util.rb"
 requires << basepath + "config.rb"
 requires << basepath + "logger.rb"
-requires += Dir[ basepath + 'model/*.rb' ]
-requires.each { |lib| puts lib; require lib }
+requires << basepath + "model/contact.rb"
+requires << basepath + "model/sla.rb"
+requires << basepath + "model/group.rb"
+requires << basepath + "model/event.rb"
+requires << basepath + "model/issue.rb"
+requires.each { |lib| require lib }
 
 ##
 # Config block

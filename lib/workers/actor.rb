@@ -1,6 +1,18 @@
 require File.dirname(__FILE__) + '/sidekiq_init.rb'
 
-$logger = Notifu::Logger.new "actor"
+$logger = Notifu::Logger.new 'actor'
+
+Sidekiq.configure_server do |config|
+  config.redis = { url: Notifu::CONFIG[:redis_queues] }
+  Sidekiq::Logging.logger = Log4r::Logger.new 'sidekiq'
+  Sidekiq::Logging.logger.outputters = Log4r::SyslogOutputter.new 'sidekiq', ident: 'notifu-actor'
+  # Sidekiq::Logging.logger.formatter = Notifu::LogFormatter.new
+  Sidekiq::Logging.logger.level = Log4r::DEBUG
+end
+
+Sidekiq.configure_client do |config|
+  config.redis = { url: Notifu::CONFIG[:redis_queues] }
+end
 
 
 module Notifu
@@ -46,6 +58,6 @@ module Notifu
 end
 
 # load all actors
-Dir[File.dirname(__FILE__).sub(/\/lib\/workers$/, "/") + 'actors/*/actor.rb'].each do |file|
+Dir[File.dirname(__FILE__).sub(/\/lib\/workers$/, "/") + 'actors/*.rb'].each do |file|
   require file
 end

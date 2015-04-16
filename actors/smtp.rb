@@ -22,6 +22,7 @@ Subject: <%= notification[:status][:message] %>
 <strong>Occurences: </strong><%= notification[:status][:occurences] %>/<%= notification[:subject][:occurences] %> (occured/trigger)<br/>
 EOF
         }
+      end
 
     end
   end
