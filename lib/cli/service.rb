@@ -14,8 +14,9 @@ module Notifu
       # Processor Service
       #
       desc "processor", "Starts Notifu processor"
-      option :concurrency, :type => :numeric, :default => 1, :aliases => :c
+      option :concurrency, :type => :numeric, :default => 2, :aliases => :c
       def processor
+        Process.setproctitle "notifu-processor"
         puts "Starting #{options[:concurrency].to_s} processor(s)"
         system("bundle exec sidekiq -c " + options[:concurrency].to_s + " -r " + $basepath + "workers/processor.rb -q processor" )
       end
@@ -34,8 +35,9 @@ module Notifu
           end
         else
           if File.exists?($actorpath + options[:actor] + ".rb") then
+            Process.setproctitle "notifu-actor [#{options[:actor]}]"
             puts "Starting #{options[:concurrency].to_s} '#{options[:actor]}' actor(s)"
-            system("bundle exec sidekiq -c " + options[:concurrency].to_s + " -r " + $basepath + "workers/actor.rb -q actor-" + options[:actor])
+            system("bundle exec sidekiq -v -c " + options[:concurrency].to_s + " -r " + $basepath + "workers/actor.rb -q actor-" + options[:actor])
           else
             STDERR.puts "Actor '#{options[:actor]}' does not exist"
             exit 1

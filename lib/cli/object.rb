@@ -7,10 +7,9 @@ module Notifu
       #
       desc "sync", "Syncs locally defined config objects with DB"
       def sync
-
-        print "Syncing data with Redis..."
-        sleep 0.5
-        print " done"
+        puts "Syncing data with Redis..."
+        Notifu::Config.new.ohm_init
+        puts "...done"
       end
 
       ##

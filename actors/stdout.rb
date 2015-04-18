@@ -7,7 +7,8 @@ module Notifu
       self.retry = 0
 
       def act
-        puts self.all_data.to_yaml
+        puts self.issue.to_yaml
+        puts self.contacts.to_yaml
       end
 
     end

@@ -7,7 +7,7 @@ timeranges:
   - "ALWAYS"
   - "ALWAYS"
   - "09:00-21:00"
-  - "NONE"
+  - "NEVER"
 renotification_interval: 3600
 actors:
   - stdout

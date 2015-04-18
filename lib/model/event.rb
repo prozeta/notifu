@@ -31,7 +31,7 @@ module Notifu
       end
 
       def group_sla
-        @group_sla ||= self.sla.map { |gs| Hash[:group, gs.split(':')[0], :sla, gs.split(':')[1]] }
+        self.sla.map { |gs| Hash[:group, gs.split(':')[0], :sla, gs.split(':')[1]] }
       end
 
       def data

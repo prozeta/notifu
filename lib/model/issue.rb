@@ -8,26 +8,35 @@ module Notifu
       attribute :service
       attribute :occurrences_trigger
       attribute :occurrences_count
+      attribute :refresh
       attribute :time_last_event
       attribute :time_last_notified
       attribute :time_created
       attribute :sla
       attribute :action
       attribute :code
+      attribute :aspiring_code
       attribute :message
       attribute :process_result
+      attribute :api_endpoint
+      attribute :duration
       index :notifu_id
+      index :host
+      index :service
+      unique :notifu_id
 
-      def last_notified sla
+
+      def time_last_notified? (group_name, sla_name)
         begin
-          @time_last_notified[sla].to_i
+          JSON.parse(self.time_last_notified)["#{group_name}:#{sla_name}"]
         rescue
           0
         end
       end
 
-      def last_notified= (sla, time)
-        @time_last_notified[sla] = time
+      def time_last_notified! (group_name, sla_name, time)
+        obj = JSON.parse(self.time_last_notified)
+        self.time_last_notified = JSON.generate(obj.merge({ "#{group_name}:#{sla_name}".to_sym => time }))
       end
 
       def create_from_event event

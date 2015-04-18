@@ -8,6 +8,7 @@ module Notifu
       attribute :mail
       attribute :jabber
       index :name
+      unique :name
 
     end
   end

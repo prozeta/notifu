@@ -47,11 +47,8 @@ module Notifu
     end
 
     def load_data args
-      puts args.to_yaml
-      self.issue = Issue.with(:notifu_id, args[0])
-      self.contacts = args[1]
-      puts
-      puts self.name
+      self.issue = Notifu::Model::Issue.with(:notifu_id, args[0])
+      self.contacts = args[1].map { |contact| Notifu::Model::Contact.with(:name, contact) }
     end
 
   end

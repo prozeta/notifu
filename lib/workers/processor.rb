@@ -1,11 +1,16 @@
 require File.dirname(__FILE__) + '/sidekiq_init.rb'
+require 'excon'
 
 $logger = Notifu::Logger.new 'processor'
 
 Sidekiq.configure_server do |config|
   config.redis = { url: Notifu::CONFIG[:redis_queues] }
   Sidekiq::Logging.logger = Log4r::Logger.new 'sidekiq'
-  Sidekiq::Logging.logger.outputters = Log4r::SyslogOutputter.new 'sidekiq', ident: 'notifu-processor'
+  if Notifu::CONFIG[:logging][:syslog][:enabled]
+    Sidekiq::Logging.logger.outputters = Log4r::SyslogOutputter.new 'sidekiq', ident: 'notifu-processor'
+  else
+    Sidekiq::Logging.logger.outputters = Log4r::Outputter.stdout
+  end
   # Sidekiq::Logging.logger.formatter = Notifu::LogFormatter.new
   Sidekiq::Logging.logger.level = Log4r::DEBUG
 end
@@ -70,7 +75,8 @@ module Notifu
           sla: String.new,
           group: String.new,
           actors: Array.new,
-          contacts: Array.new
+          contacts: Array.new,
+          escalation_level: "none"
         }
 
         result = []
@@ -93,7 +99,7 @@ module Notifu
                   result << "issue is in OK state" << "IDLE"
                 when 1
                   result << "issue is in WARNING state"
-                  if first_notification?
+                  if first_notification?(sla, group)
                     result << "issue is new"
                     notified = notify!(sla, group)
                     result << "ACTION"
@@ -107,7 +113,7 @@ module Notifu
                     notified = notify!(sla, group)
                     result << "ACTION"
                   else
-                    result << "not yet time to renotify" << "IDLE"
+                    result << "not yet time to renotify or escalate" << "IDLE"
                   end
                 else
                   result << "unknown state (#{self.event.code})" << "IDLE"
@@ -124,12 +130,14 @@ module Notifu
         end
 
         # LOG
-        log "info", "JID-#{self.jid} (#{group.name}:#{sla.name}) #{self.event.notifu_id}[#{self.event.host}/#{self.event.service}/#{self.event.code.to_state}]: " + result.join(' -> ')
+        log "info", "JID-#{self.jid}: (#{group.name}:#{sla.name}) NID-#{self.event.notifu_id} [#{self.event.host}/#{self.event.service}/#{self.event.code.to_state}]: " + result.join(' -> ')
 
         self.event.update_process_result!(notified)
 
         action_log_message = {
-          result: result,
+          logic: result.join(' -> '),
+          result: result[-1],
+          reason: result[-2],
           group: group.name,
           sla: sla.name,
           host: self.event.host,
@@ -137,10 +145,11 @@ module Notifu
           message: self.event.message,
           state: self.event.code.to_state,
           contacts: notified[:contacts].to_json,
-          actors: notified[:actors].to_s,
+          actors: notified[:actors].to_json,
           check_duration: self.event.duration,
+          escalation_level: notified[:escalation_level].to_s,
           sidekiq_jid: self.jid,
-          :"@timestamp" => self.now.to_i,
+          :"@timestamp" => self.now.iso8601,
         }
         action_log action_log_message
       end
@@ -162,7 +171,7 @@ module Notifu
       self.issue.duration = self.event.duration
 
       self.issue.save
-      cleanup!
+      # cleanup!
     end
 
 ###################################################################
@@ -172,24 +181,43 @@ module Notifu
     def notify! (sla, group)
       actors = []
       contacts = []
+      escalation_level = "primary"
+      sla_actors = eval(sla.actors)
 
-      JSON.parse(sla.actors).each do |actor|
-        if contacts == []
-          group.members.each do |contact|
-            contacts << contact.name
-          end
+      group.primary.each do |contact|
+        contacts << contact.name
+      end
+      actors += sla_actors[:primary]
+
+      # secondary escalation
+      if escalate_to?(1, sla) && sla_actors[:secondary]
+        group.secondary.each do |contact|
+          contacts << contact.name
         end
+        actors += sla_actors[:secondary]
+        escalation_level = "secondary"
+      end
+
+      # tertiary escalation
+      if escalate_to?(2, sla) && sla_actors[:tertiary]
+        group.tertiary.each do |contact|
+          contacts << contact.name
+        end
+        actors += sla_actors[:tertiary]
+        escalation_level = "tertiary"
+      end
+
+      actors.each do |actor|
         job = Sidekiq::Client.push( 'class' => "Notifu::Actors::#{actor.camelize}",
                                     'args'  => [ self.event.notifu_id, contacts ],
                                     'queue' => "actor-#{actor}")
-        log "notice", "JID-#{self.jid} (#{group.name}:#{sla.name}) NID-#{self.event.notifu_id} [#{self.event.host}/#{self.event.service}/#{self.event.code.to_state}]: taking action - actor: #{actor}, contacts: #{contacts.to_s} "
+        log "info", "JID-#{self.jid}: (#{group.name}:#{sla.name}) NID-#{self.event.notifu_id} [#{self.event.host}/#{self.event.service}/#{self.event.code.to_state}]: taking action - actor: #{actor}; contacts: #{contacts.join(', ')}; escalation_level: #{escalation_level}"
 
-        actors << actor
       end
 
-      self.issue.time_last_notified!("#{sla.name}:#{group.name}", Time.now.to_i)
+      self.issue.time_last_notified!(group.name, sla.name, Time.now.to_i)
 
-      return { sla: sla.name, group: group.name, actors: actors, contacts: contacts }
+      return { sla: sla.name, group: group.name, actors: actors, contacts: contacts, escalation_level: escalation_level }
     end
 
 
@@ -201,15 +229,41 @@ module Notifu
       self.event.occurrences_count >= self.event.occurrences_trigger ? true : false
     end
 
+    def escalate_to?(level, sla)
+
+      # escalation_interval = self.event.refresh
+      # escalation_interval ||= sla.refresh
+      escalation_interval = sla.refresh
+      escalation_period = level.to_i * escalation_interval.to_i
+
+      if ( self.issue.time_created.to_i + escalation_period.to_i ) <= ( self.now.to_i + 10 )
+        return true
+      else
+        return false
+      end
+    end
 
     def silenced?
-      # begin
-      #   sensu_api = Excon.get "http://#{self.event.api_endpoint}/stashes"
-      #   stashes = JSON.parse sensu_api.body
-      # rescue
-      #   return false
-      # end
-      false
+      begin
+        sensu_api = Excon.get "#{self.event.api_endpoint}/stashes"
+        stashes = JSON.parse sensu_api.body
+      rescue
+        stashes = []
+        log "error", "Failed to get stashes #{self.event.api_endpoint}/stashes"
+      end
+
+      if self.event.service == "keepalive"
+        path = "silence/#{self.event.host}"
+      else
+        path = "silence/#{self.event.host}/#{self.event.service}"
+      end
+
+      silenced = false
+      stashes.each do |stash|
+        silenced = true if stash["path"] == path
+      end
+
+      return silenced
     end
 
     def is_ok?
@@ -224,20 +278,25 @@ module Notifu
       self.event.code == 2 ? true : false
     end
 
-    def first_notification? group
-      self.issue.time_last_notified?(group) == {} ? true : false
+    def first_notification? sla, group
+      self.issue.time_last_notified?(group.name, sla.name) == nil ? true : false
     end
 
     def status_changed?
-      @event.code != @issue.code ? true : false
+      self.event.code.to_i != self.issue.code.to_i ? true : false
     end
 
     def renotify? (sla, group)
-      t_renotify_int = self.event.refresh
-      t_renotify_int ||= sla.refresh
-      t_last_notified = self.issue.time_last_notified?("#{group.name}:#{sla.name}")
+      # t_renotify_int = self.event.refresh
+      # t_renotify_int ||= sla.refresh
+      t_renotify_int = sla.refresh
+      t_last_notified = self.issue.time_last_notified?(group.name, sla.name)
 
-      ( t_last_notified.to_i + t_renotify_int.to_i ) < self.now.to_i ? true : false
+      if ( t_last_notified.to_i + t_renotify_int.to_i ) <= ( self.now.to_i + 10 )
+        return true
+      else
+        return false
+      end
     end
 
     def duty_time? (timerange)

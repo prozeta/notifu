@@ -31,14 +31,13 @@ module Notifu
         end
       else
         log "info", "Syslog disabled"
-        @logger.outpuppers = Log4r::Outputter.stdout
+        @logger.outputters = Log4r::Outputter.stdout
       end
 
       if self.elasticsearch_enabled
         begin
-          log "info", "Connecting to ElasticSearch: " + Notifu::CONFIG[:logging][:elasticsearch][:conn].to_json
           @es = Elasticsearch::Client.new hosts: Notifu::CONFIG[:logging][:elasticsearch][:conn], retry_on_failure: false
-          log "info", "Connected to ElasticSearch"
+          log "info", "Action log output to ElasticSearch - " + Notifu::CONFIG[:logging][:elasticsearch][:conn].to_json
         rescue
           @es = false
           log "error", "Failed to connect to ElasticSearch"
@@ -57,7 +56,7 @@ module Notifu
         self.es.index index: index_name, type: type, body: event
       else
         log "debug", "Action log: #{type}"
-        log "info", event
+        log "debug", "Action log: (#{type}) #{event.to_json}"
       end
     end
 
