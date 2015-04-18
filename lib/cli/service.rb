@@ -37,7 +37,7 @@ module Notifu
           if File.exists?($actorpath + options[:actor] + ".rb") then
             Process.setproctitle "notifu-actor [#{options[:actor]}]"
             puts "Starting #{options[:concurrency].to_s} '#{options[:actor]}' actor(s)"
-            system("bundle exec sidekiq -v -c " + options[:concurrency].to_s + " -r " + $basepath + "workers/actor.rb -q actor-" + options[:actor])
+            system("bundle exec sidekiq -c " + options[:concurrency].to_s + " -r " + $basepath + "workers/actor.rb -q actor-" + options[:actor])
           else
             STDERR.puts "Actor '#{options[:actor]}' does not exist"
             exit 1
