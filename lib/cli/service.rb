@@ -18,8 +18,8 @@ module Notifu
       def processor
         Process.setproctitle "notifu-processor"
         puts "Starting #{options[:concurrency].to_s} processor(s)"
-        puts( $sidekiq_bin + " exec sidekiq -c " + options[:concurrency].to_s + " -r " + $basepath + "lib/workers/processor.rb -q processor" )
-        system( $sidekiq_bin + " exec sidekiq -c " + options[:concurrency].to_s + " -r " + $basepath + "lib/workers/processor.rb -q processor" )
+        puts( $sidekiq_bin + " -c " + options[:concurrency].to_s + " -r " + $basepath + "lib/workers/processor.rb -q processor" )
+        system( $sidekiq_bin + " -c " + options[:concurrency].to_s + " -r " + $basepath + "lib/workers/processor.rb -q processor" )
       end
 
       ##
