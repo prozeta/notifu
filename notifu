@@ -5,6 +5,8 @@ $basepath = File.dirname(path) + "/"
 $actorpath = $basepath + "actors/"
 $bundle = $basepath.sub(/app\//, '') + ".rvm/wrappers/notifu/bundle"
 
+require 'rubygems'
+require 'bundler/setup'
 require 'yaml'
 require 'json'
 require 'thor'
