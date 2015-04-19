@@ -1,4 +1,4 @@
-require File.dirname(__FILE__) + '/sidekiq_init.rb'
+require_relative "sidekiq_init"
 
 $logger = Notifu::Logger.new 'actor'
 

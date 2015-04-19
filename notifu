@@ -1,0 +1,26 @@
+#!/usr/bin/env ruby
+require 'yaml'
+require 'json'
+require 'thor'
+require 'ohm'
+
+$basepath = File.dirname(__FILE__) + "/"
+$actorpath = $basepath + "actors/"
+
+require_relative "lib/mixins.rb"
+require_relative "lib/util.rb"
+require_relative "lib/config.rb"
+require_relative "lib/logger.rb"
+require_relative "lib/cli/service.rb"
+require_relative "lib/cli/object.rb"
+require_relative "lib/cli.rb"
+require_relative "lib/model/contact.rb"
+require_relative "lib/model/sla.rb"
+require_relative "lib/model/group.rb"
+require_relative "lib/model/event.rb"
+require_relative "lib/model/issue.rb"
+
+Notifu::CONFIG = Notifu::Config.new.get
+Ohm.redis = Redic.new Notifu::CONFIG[:redis_data]
+
+Notifu::CLI::Root.start(ARGV)

@@ -13,7 +13,7 @@ module Notifu
       attribute :time_last_event
       attribute :time_last_notified
       attribute :time_created
-      attribute :sla
+      attribute :sgs
       attribute :action
       attribute :code
       attribute :aspiring_code

@@ -1,4 +1,6 @@
-require 'redis'
+require 'sensu/redis'
+require 'digest'
+
 
 module Sensu::Extension
   class Notifu < Handler
@@ -19,8 +21,7 @@ module Sensu::Extension
       @options = {
         :host    => '127.0.0.1',
         :port    => 6379,
-        :channel => "processor",
-        :db      => 4
+        :db      => 2
       }
       if @settings[:notifu].is_a?(Hash)
         @options.merge!(@settings[:notifu])
@@ -35,52 +36,60 @@ module Sensu::Extension
     def post_init
       @redis = Sensu::Redis.connect(options)
       @redis.on_error do |error|
-        @logger.warn('Notifu Redis instance not available on ' + options[:host] + ':' + options[:port])
+        @logger.warn('NOTIFU: Redis instance not available on ' + options[:host] + ':' + options[:port])
       end
+      @redis.sadd("queues", "processor")
     end
 
-    def run event
-      begin
-        if event[:check][:name] == "keepalive"
-          sla = event[:client][:sla]
-        else
-          sla = event[:check][:sla]
-        end
-      rescue
-        @logger.warn('No SLA, dropping event')
-        yield ''
+    def run(event_data)
+      event = MultiJson.load(event_data, { :symbolize_keys => true })
+      notifu_id = Digest::SHA256.hexdigest("#{event[:client][:name]}:#{event[:client][:address]}:#{event[:check][:name]}").to_s[-10,10]
+
+      if event[:check][:name] == "keepalive"
+        sgs = event[:client][:sgs]
+        sgs ||= event[:client][:sla]
+      else
+        sgs = event[:check][:sgs]
+        sgs ||= event[:check][:sla]
       end
 
       payload = {
-        notifu_id: event[:id],
+        notifu_id: notifu_id,
         host: event[:client][:name],
         address: event[:client][:address],
         service: event[:check][:name],
         occurrences_trigger: event[:check][:occurrences],
         occurrences_count: event[:occurrences],
+        interval: event[:check][:interval] || 0,
         time_last_event: event[:check][:executed],
-        sla: sla,
+        sgs: sgs,
         action: event[:action],
         code: event[:check][:status],
         message: event[:check][:output],
-        api_endpoint: "http://" + @settings[:api][:host] + ":" + @settings[:api][:port] + "/"
+        api_endpoint: "http://" + @settings[:api][:host].to_s + ":" + @settings[:api][:port].to_s
       }
 
       job = {
         'class' => 'Notifu::Processor',
-        'args' => payload,
+        'args' => [ payload ],
         'jid' => SecureRandom.hex(12),
         'retry' => true,
         'enqueued_at' => Time.now.to_f
       }
 
       begin
-        @redis.lpush("default:queue:processor", JSON.dump(job))
-        @logger.info('Event dispatched to Notifu')
+        @redis.lpush("queue:processor", MultiJson.dump(job))
       rescue Exception => e
-        @logger.error('Event dispatch to Notifu failed: ' + e)
+        yield "failed to send event to Notifu #{e.message}", 1
       end
+
+      yield "sent event to Notifu #{notifu_id}", 0
+    end
+
+    def stop
+      yield
     end
 
   end
 end
+

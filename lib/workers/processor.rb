@@ -1,4 +1,4 @@
-require File.dirname(__FILE__) + '/sidekiq_init.rb'
+require_relative "sidekiq_init"
 require 'excon'
 
 $logger = Notifu::Logger.new 'processor'
@@ -12,7 +12,7 @@ Sidekiq.configure_server do |config|
     Sidekiq::Logging.logger.outputters = Log4r::Outputter.stdout
   end
   # Sidekiq::Logging.logger.formatter = Notifu::LogFormatter.new
-  Sidekiq::Logging.logger.level = Log4r::DEBUG
+  Sidekiq::Logging.logger.level = Log4r::INFO
 end
 
 Sidekiq.configure_client do |config|
@@ -183,7 +183,7 @@ module Notifu
       self.issue.occurrences_trigger = self.event.occurrences_trigger
       self.issue.occurrences_count = self.event.occurrences_count
       self.issue.time_last_event = self.event.time_last_event
-      self.issue.sla = self.event.sla
+      self.issue.sgs = self.event.sgs
       self.issue.aspiring_code = self.event.code
       self.issue.api_endpoint = self.event.api_endpoint
       self.issue.duration = self.event.duration

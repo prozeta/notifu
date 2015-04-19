@@ -12,7 +12,7 @@ module Notifu
       attr_reader :time_last_event
       attr_reader :time_last_notified
       attr_reader :time_created
-      attr_reader :sla
+      attr_reader :sgs
       attr_reader :action
       attr_reader :code
       attr_reader :aspiring_code
@@ -33,7 +33,7 @@ module Notifu
       end
 
       def group_sla
-        self.sla.map { |gs| Hash[:group, gs.split(':')[0], :sla, gs.split(':')[1]] }
+        self.sgs.map { |gs| Hash[:group, gs.split(':')[0], :sla, gs.split(':')[1]] }
       end
 
       def data

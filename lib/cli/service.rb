@@ -18,7 +18,7 @@ module Notifu
       def processor
         Process.setproctitle "notifu-processor"
         puts "Starting #{options[:concurrency].to_s} processor(s)"
-        system("bundle exec sidekiq -c " + options[:concurrency].to_s + " -r " + $basepath + "workers/processor.rb -q processor" )
+        system("bundle exec sidekiq -c " + options[:concurrency].to_s + " -r " + $basepath + "lib/workers/processor.rb -q processor" )
       end
 
       ##
@@ -29,7 +29,7 @@ module Notifu
       option :concurrency, :type => :numeric, :default => 1, :aliases => :c
       def actor
         if ! options[:actor]
-          puts "No actor name specified! Available actors:"
+          puts "No actor name specified (-a <actor_name>)! Available actors:"
           Dir[$actorpath + "*.rb"].each do |name|
             puts name.gsub(/.*\/([a-zA-Z0-9_]+)\.rb/, "  \\1")
           end
@@ -37,7 +37,7 @@ module Notifu
           if File.exists?($actorpath + options[:actor] + ".rb") then
             Process.setproctitle "notifu-actor [#{options[:actor]}]"
             puts "Starting #{options[:concurrency].to_s} '#{options[:actor]}' actor(s)"
-            system("bundle exec sidekiq -c " + options[:concurrency].to_s + " -r " + $basepath + "workers/actor.rb -q actor-" + options[:actor])
+            system("bundle exec sidekiq -c " + options[:concurrency].to_s + " -r " + $basepath + "lib/workers/actor.rb -q actor-" + options[:actor])
           else
             STDERR.puts "Actor '#{options[:actor]}' does not exist"
             exit 1

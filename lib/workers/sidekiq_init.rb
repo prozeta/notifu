@@ -1,26 +1,23 @@
 ##
 # Require block
 #
-basepath = File.dirname(__FILE__).sub(/\/workers$/, "/")
-requires = Array.new
-requires << "ohm"
-requires << "elasticsearch"
-requires << "log4r/outputter/syslogoutputter"
-requires << "log4r/configurator"
-requires << "log4r"
-requires << "syslog"
-requires << "sidekiq"
-requires << "sidekiq/logging"
-requires << basepath + "mixins.rb"
-requires << basepath + "util.rb"
-requires << basepath + "config.rb"
-requires << basepath + "logger.rb"
-requires << basepath + "model/contact.rb"
-requires << basepath + "model/sla.rb"
-requires << basepath + "model/group.rb"
-requires << basepath + "model/event.rb"
-requires << basepath + "model/issue.rb"
-requires.each { |lib| require lib }
+require "ohm"
+require "elasticsearch"
+require "log4r/outputter/syslogoutputter"
+require "log4r/configurator"
+require "log4r"
+require "syslog"
+require "sidekiq"
+require "sidekiq/logging"
+require_relative "../mixins.rb"
+require_relative "../util.rb"
+require_relative "../config.rb"
+require_relative "../logger.rb"
+require_relative "../model/contact.rb"
+require_relative "../model/sla.rb"
+require_relative "../model/group.rb"
+require_relative "../model/event.rb"
+require_relative "../model/issue.rb"
 
 ##
 # Config block
