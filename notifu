@@ -3,7 +3,7 @@
 path = File.symlink?(__FILE__) ? File.readlink(__FILE__) : __FILE__
 $basepath = File.dirname(path) + "/"
 $actorpath = $basepath + "actors/"
-$bundle = $basepath.sub(/app\//, '') + ".rvm/wrappers/notifu/bundle"
+$sidekiq_bin = $basepath.sub(/app\//, '') + ".rvm/wrappers/notifu/sidekiq"
 
 require 'rubygems'
 require 'bundler/setup'

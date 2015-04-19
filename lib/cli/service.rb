@@ -18,8 +18,8 @@ module Notifu
       def processor
         Process.setproctitle "notifu-processor"
         puts "Starting #{options[:concurrency].to_s} processor(s)"
-        puts( $bundle + " exec sidekiq -c " + options[:concurrency].to_s + " -r " + $basepath + "lib/workers/processor.rb -q processor" )
-        system( $bundle + " exec sidekiq -c " + options[:concurrency].to_s + " -r " + $basepath + "lib/workers/processor.rb -q processor" )
+        puts( $sidekiq_bin + " exec sidekiq -c " + options[:concurrency].to_s + " -r " + $basepath + "lib/workers/processor.rb -q processor" )
+        system( $sidekiq_bin + " exec sidekiq -c " + options[:concurrency].to_s + " -r " + $basepath + "lib/workers/processor.rb -q processor" )
       end
 
       ##
@@ -38,8 +38,8 @@ module Notifu
           if File.exists?($actorpath + options[:actor] + ".rb") then
             Process.setproctitle "notifu-actor [#{options[:actor]}]"
             puts "Starting #{options[:concurrency].to_s} '#{options[:actor]}' actor(s)"
-            puts( $bundle + " exec sidekiq -c " + options[:concurrency].to_s + " -r " + $basepath + "lib/workers/actor.rb -q actor-" + options[:actor])
-            system( $bundle + " exec sidekiq -c " + options[:concurrency].to_s + " -r " + $basepath + "lib/workers/actor.rb -q actor-" + options[:actor])
+            puts( $sidekiq_bin + " exec sidekiq -c " + options[:concurrency].to_s + " -r " + $basepath + "lib/workers/actor.rb -q actor-" + options[:actor])
+            system( $sidekiq_bin + " exec sidekiq -c " + options[:concurrency].to_s + " -r " + $basepath + "lib/workers/actor.rb -q actor-" + options[:actor])
             exit 0
           else
             STDERR.puts "Actor '#{options[:actor]}' does not exist"
