@@ -134,7 +134,7 @@ module Notifu
           else
             result << "issue is silenced" << "IDLE"
           end
-        elsif self.event.action == "resolve"
+        elsif self.event.action == "resolve" && ! silenced?
           result << "recovery of an event"
           notified = notify!(sla, group)
           result << "ACTION"
