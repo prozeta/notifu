@@ -13,13 +13,13 @@ class Numeric
     days  = hours / 24
 
     if days > 0
-      "#{days} days and #{hours % 24} hours"
+      "#{days}d, #{hours % 24}h"
     elsif hours > 0
-      "#{hours} hours and #{mins % 60} minutes"
+      "#{hours}h, #{mins % 60}min"
     elsif mins > 0
-      "#{mins} minutes and #{secs % 60} seconds"
+      "#{mins}min, #{secs % 60}s"
     elsif secs >= 0
-      "#{secs} seconds"
+      "#{secs}s"
     end
   end
 

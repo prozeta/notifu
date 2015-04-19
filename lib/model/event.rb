@@ -8,6 +8,7 @@ module Notifu
       attr_reader :service
       attr_reader :occurrences_trigger
       attr_reader :occurrences_count
+      attr_reader :interval
       attr_reader :time_last_event
       attr_reader :time_last_notified
       attr_reader :time_created
@@ -27,6 +28,7 @@ module Notifu
         @time_last_notified = Hash.new.to_json.to_s
         @time_created = self.time_last_event
         @aspiring_code = self.code
+        @occurrences_trigger ||= 1
         @refresh ||= nil
       end
 

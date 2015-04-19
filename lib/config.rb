@@ -108,7 +108,11 @@ module Notifu
             group.tertiary.replace(contacts)
             group.save
             puts "Tertiary contacts for group '#{cfg[:name]}' updated."
+          else
+            group.tertiary.replace([])
           end
+        else
+          group.secondary.replace([])
         end
       end
     end

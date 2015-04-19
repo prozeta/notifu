@@ -37,11 +37,11 @@ module Notifu
       exit 1
     end
 
-
     sidekiq_options :queue => "actor-#{self.name}"
     sidekiq_options :retry => self.retry
 
     def perform *args
+      sleep 2
       load_data args
       act
     end

@@ -26,6 +26,7 @@ module Notifu
         html_message = ERB.new(self.html_template).result(data.instance_eval {binding})
         mail = Mail.new do
           from Notifu::CONFIG[:actors][:smtp][:from]
+          subject "#{data[:status]}/#{data[:host]}/#{data[:service]}"
           to contacts
           text_part do
             body text_message
@@ -41,8 +42,6 @@ module Notifu
 
       def text_template
         %{
-Subject: <%= data[:status] %>/<%= data[:host] %>/<%= data[:service] %>
-
 <%= data[:message] %>
 
 Notifu ID: <%= data[:notifu_id] %>
@@ -57,8 +56,6 @@ Occurences: <%= data[:occurrences_count] %>/<%= data[:occurrences_trigger] %> (o
 
       def html_template
         %{
-Subject: <%= data[:status] %>/<%= data[:host] %>/<%= data[:service] %>
-
 <h3><%= data[:message] %></h3><br/>
 
 <strong>Notifu ID: </strong><%= data[:notifu_id] %><br/>

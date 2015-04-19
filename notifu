@@ -1,3 +1,0 @@
-#!/bin/bash
-
-/home/blufor/DEV/notifu/lib/notifu $*

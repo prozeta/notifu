@@ -8,6 +8,7 @@ module Notifu
       attribute :service
       attribute :occurrences_trigger
       attribute :occurrences_count
+      attribute :interval
       attribute :refresh
       attribute :time_last_event
       attribute :time_last_notified
@@ -36,7 +37,7 @@ module Notifu
 
       def time_last_notified! (group_name, sla_name, time)
         obj = JSON.parse(self.time_last_notified)
-        self.time_last_notified = JSON.generate(obj.merge({ "#{group_name}:#{sla_name}".to_sym => time }))
+        self.time_last_notified = JSON.generate(obj.merge({ "#{group_name}:#{sla_name}" => time }))
       end
 
       def create_from_event event

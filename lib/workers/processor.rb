@@ -19,6 +19,13 @@ Sidekiq.configure_client do |config|
   config.redis = { url: Notifu::CONFIG[:redis_queues] }
 end
 
+###################################################################
+###################################################################
+####### PROCESSOR WORKER ##########################################
+###################################################################
+###################################################################
+
+
 module Notifu
   class Processor
     include Sidekiq::Worker
@@ -38,10 +45,12 @@ module Notifu
 
     def perform *args
       t_start = Time.now.to_f*1000.0
+      log "info", "Task start"
 
       # read event
       self.event = Notifu::Model::Event.new args
       self.now = Time.now
+      log "info", "Processing event NID #{self.event.notifu_id}"
 
       # try to check if we already know about the issue, otherwise save it into DB as a new one
       self.issue = Notifu::Model::Issue.with(:notifu_id, self.event.notifu_id)
@@ -52,7 +61,7 @@ module Notifu
 
       t_finish = Time.now.to_f*1000.0
 
-      log "info", "JID-#{self.jid}: Task duration #{t_finish-t_start}ms"
+      log "info", "Task finish (in #{t_finish-t_start}ms)"
     end
 
 ###################################################################
@@ -82,7 +91,7 @@ module Notifu
         result = []
 
         # logic
-        if enough_occurrences?
+        if enough_occurrences? && self.event.action.to_s == "create"
           result << "enough occurrences have passed"
           if ! silenced?
             result << "issue is not silenced"
@@ -125,12 +134,13 @@ module Notifu
           else
             result << "issue is silenced" << "IDLE"
           end
+        elsif self.event.action == "resolve"
+          result << "recovery of an event"
+          notified = notify!(sla, group)
+          result << "ACTION"
         else
           result << "not enough occurrences of this event" << "IDLE"
         end
-
-        # LOG
-        log "info", "JID-#{self.jid}: (#{group.name}:#{sla.name}) NID-#{self.event.notifu_id} [#{self.event.host}/#{self.event.service}/#{self.event.code.to_state}]: " + result.join(' -> ')
 
         self.event.update_process_result!(notified)
 
@@ -146,20 +156,28 @@ module Notifu
           state: self.event.code.to_state,
           contacts: notified[:contacts].to_json,
           actors: notified[:actors].to_json,
+          occurrences_trigger: self.event.occurrences_trigger.to_i,
+          occurrences_count: self.event.occurrences_count.to_i,
           check_duration: self.event.duration,
           escalation_level: notified[:escalation_level].to_s,
           sidekiq_jid: self.jid,
           :"@timestamp" => self.now.iso8601,
         }
+
         action_log action_log_message
+
       end
 
-
       if self.event.process_result.length > 0
-        self.issue.code = self.event.code
         self.issue.message = self.event.message
         self.issue.action = self.event.action
         self.issue.process_result = self.event.process_result
+        @issue.save
+      end
+
+      if status_changed?
+        self.issue.code = self.event.code
+        self.issue.time_created = self.event.time_created
       end
 
       self.issue.occurrences_trigger = self.event.occurrences_trigger
@@ -170,8 +188,10 @@ module Notifu
       self.issue.api_endpoint = self.event.api_endpoint
       self.issue.duration = self.event.duration
 
-      self.issue.save
-      # cleanup!
+      @issue.save
+
+      # delayed cleanup job
+      cleanup!
     end
 
 ###################################################################
@@ -190,20 +210,20 @@ module Notifu
       actors += sla_actors[:primary]
 
       # secondary escalation
-      if escalate_to?(1, sla) && sla_actors[:secondary]
+      if escalate_to?(1, sla)
         group.secondary.each do |contact|
           contacts << contact.name
         end
-        actors += sla_actors[:secondary]
+        actors += sla_actors[:secondary] if sla_actors[:secondary]
         escalation_level = "secondary"
       end
 
       # tertiary escalation
-      if escalate_to?(2, sla) && sla_actors[:tertiary]
+      if escalate_to?(2, sla)
         group.tertiary.each do |contact|
           contacts << contact.name
         end
-        actors += sla_actors[:tertiary]
+        actors += sla_actors[:tertiary] if sla_actors[:tertiary]
         escalation_level = "tertiary"
       end
 
@@ -211,9 +231,9 @@ module Notifu
         job = Sidekiq::Client.push( 'class' => "Notifu::Actors::#{actor.camelize}",
                                     'args'  => [ self.event.notifu_id, contacts ],
                                     'queue' => "actor-#{actor}")
-        log "info", "JID-#{self.jid}: (#{group.name}:#{sla.name}) NID-#{self.event.notifu_id} [#{self.event.host}/#{self.event.service}/#{self.event.code.to_state}]: taking action - actor: #{actor}; contacts: #{contacts.join(', ')}; escalation_level: #{escalation_level}"
-
       end
+
+      log "info", "Taking action (#{group.name}:#{sla.name}) NID #{self.event.notifu_id} [#{self.event.host}/#{self.event.service}/#{self.event.code.to_state}] actor: #{actors.join(', ')}; contacts: #{contacts.join(', ')}; escalation_level: #{escalation_level}"
 
       self.issue.time_last_notified!(group.name, sla.name, Time.now.to_i)
 
@@ -222,7 +242,7 @@ module Notifu
 
 
 ###################################################################
-####### LOGIC BLOCK (methods for :process! ) ######################
+####### LOGIC BLOCK ###############################################
 ###################################################################
 
     def enough_occurrences?
@@ -236,7 +256,12 @@ module Notifu
       escalation_interval = sla.refresh
       escalation_period = level.to_i * escalation_interval.to_i
 
-      if ( self.issue.time_created.to_i + escalation_period.to_i ) <= ( self.now.to_i + 10 )
+      # log "info", "[#{escalation_period.to_s}] Creation time:     " + Time.at(self.issue.time_created.to_i).to_s
+      # log "info", "[#{escalation_period.to_s}] Escalation time:   " + Time.at(self.issue.time_created.to_i + escalation_period.to_i).to_s
+      # log "info", "[#{escalation_period.to_s}] Now time:          " + Time.at(self.now.to_i).to_s
+
+
+      if self.issue.time_created.to_i + escalation_period.to_i <= self.now.to_i && is_critical?
         return true
       else
         return false
@@ -292,7 +317,7 @@ module Notifu
       t_renotify_int = sla.refresh
       t_last_notified = self.issue.time_last_notified?(group.name, sla.name)
 
-      if ( t_last_notified.to_i + t_renotify_int.to_i ) <= ( self.now.to_i + 10 )
+      if t_last_notified.to_i + t_renotify_int.to_i <= self.now.to_i
         return true
       else
         return false
@@ -328,16 +353,15 @@ module Notifu
     #
     def cleanup!
       if is_ok? && self.issue.action == "resolve"
-        Notifu::Cleanup.perform_in(2.minutes, self.issue.notifu_id)
+        Notifu::Cleaner.perform_async(self.issue.notifu_id)
       end
     end
-
 
     ##
     # logging method
     #
     def log(prio, msg)
-      $logger.log prio, msg
+      $logger.log prio, "JID-#{self.jid}: " + msg.to_s
     end
 
     ##
@@ -347,6 +371,32 @@ module Notifu
       $logger.action_log "processor", event
     end
 
+  end
+end
+
+###################################################################
+###################################################################
+####### CLEANER WORKER ############################################
+###################################################################
+###################################################################
+
+module Notifu
+  class Cleaner
+    include Sidekiq::Worker
+    include Notifu::Util
+
+    sidekiq_options :retry => true
+    sidekiq_options :queue => "processor"
+
+    def perform notifu_id, delay=15
+      sleep delay
+      Notifu::Model::Issue.with(:notifu_id, notifu_id).delete
+      log "info", "Cleanup NID #{notifu_id}"
+    end
+
+    def log(prio, msg)
+      $logger.log prio, "JID-#{self.jid}: " + msg.to_s
+    end
 
   end
 end
