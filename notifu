@@ -1,12 +1,14 @@
-#!/usr/bin/env ruby
+#!/opt/notifu/.rvm/wrappers/notifu/ruby
+
+path = File.symlink?(__FILE__) ? File.readlink(__FILE__) : __FILE__
+$basepath = File.dirname(path) + "/"
+$actorpath = $basepath + "actors/"
+$bundle = $basepath.sub(/app\//, '') + ".rvm/wrappers/notifu/bundle"
+
 require 'yaml'
 require 'json'
 require 'thor'
 require 'ohm'
-
-$basepath = File.dirname(__FILE__) + "/"
-$actorpath = $basepath + "actors/"
-
 require_relative "lib/mixins.rb"
 require_relative "lib/util.rb"
 require_relative "lib/config.rb"
