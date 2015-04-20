@@ -1,3 +1,5 @@
 Notifu
 ======
-Sensu notification service. This documentation is in the Wiki
+Sensu notification service.
+
+https://github.com/blufor/notifu/wiki
