@@ -134,7 +134,7 @@ module Notifu
           else
             result << "issue is silenced" << "IDLE"
           end
-        elsif self.event.action == "resolve" && ! silenced? && self.issue.occurrences_count >= self.event.occurrences_trigger
+        elsif self.event.action == "resolve" && ! silenced? && self.issue.occurrences_count.to_i >= self.event.occurrences_trigger.to_i
           result << "recovery of an event"
           notified = notify!(sla, group)
           result << "ACTION"
@@ -161,6 +161,7 @@ module Notifu
           check_duration: self.event.duration,
           escalation_level: notified[:escalation_level].to_s,
           sidekiq_jid: self.jid,
+          notifu_id: self.event.notifu_id
           :"@timestamp" => self.now.iso8601,
         }
 
