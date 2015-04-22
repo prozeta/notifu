@@ -66,6 +66,7 @@ module Sensu::Extension
         action: event[:action],
         code: event[:check][:status],
         message: event[:check][:output],
+        duration: event[:check][:duration],
         api_endpoint: "http://" + @settings[:api][:host].to_s + ":" + @settings[:api][:port].to_s
       }
 
