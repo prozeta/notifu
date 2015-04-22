@@ -161,7 +161,7 @@ module Notifu
           check_duration: self.event.duration,
           escalation_level: notified[:escalation_level].to_s,
           sidekiq_jid: self.jid,
-          notifu_id: self.event.notifu_id
+          notifu_id: self.event.notifu_id,
           :"@timestamp" => self.now.iso8601,
         }
 
