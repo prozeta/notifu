@@ -21,7 +21,8 @@ actors:
     port: "mother.prz"
 
   twilio_call:
-    script_path: "/usr/local/bin/twilio_call.py"
+    api: "https://domain.com/some/uri/path"
+    token: "YourSecureTokenForAPI"
 
 # Logging configuration
 logging:
