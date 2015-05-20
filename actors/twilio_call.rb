@@ -15,7 +15,7 @@ module Notifu
                       "?token="       + Notifu::CONFIG[:actors][:twilio_call][:token] +
                       "&status="      + self.issue.code.to_state +
                       "&hostname="    + self.issue.host +
-                      "&status="      + self.issue.service +
+                      "&service="     + self.issue.service +
                       "&description=" + ERB::Util.url_encode(self.issue.message.to_s) +
                       "&call_group="  + ERB::Util.url_encode(contacts.to_json) +
                       "&init=1"
