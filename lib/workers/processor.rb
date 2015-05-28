@@ -391,8 +391,12 @@ module Notifu
 
     def perform notifu_id, delay=15
       sleep delay
-      Notifu::Model::Issue.with(:notifu_id, notifu_id).delete
-      log "info", "Cleanup NID #{notifu_id}"
+      begin
+        Notifu::Model::Issue.with(:notifu_id, notifu_id).delete
+        log "info", "Cleanup NID #{notifu_id} - success"
+      rescue NoMethodError
+        log "info", "Cleanup NID #{notifu_id} - not found"
+      end
     end
 
     def log(prio, msg)
