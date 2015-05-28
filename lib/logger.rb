@@ -36,7 +36,7 @@ module Notifu
 
       if self.elasticsearch_enabled
         begin
-          @es = Elasticsearch::Client.new hosts: Notifu::CONFIG[:logging][:elasticsearch][:conn], retry_on_failure: false
+          @es = Elasticsearch::Client.new hosts: Notifu::CONFIG[:logging][:elasticsearch][:conn], retry_on_failure: false, transport_options: { request: { timeout: Notifu::CONFIG[:logging][:elasticsearch][:timeout] || 10 } }
           log "info", "Action log output to ElasticSearch - " + Notifu::CONFIG[:logging][:elasticsearch][:conn].to_json
         rescue
           @es = false
@@ -53,7 +53,12 @@ module Notifu
     def action_log (type, event)
       if self.elasticsearch_enabled && self.es
         index_name = "notifu-" + Time.now.strftime("%Y.%m.%d").to_s
-        self.es.index index: index_name, type: type, body: event
+        begin
+          self.es.index index: index_name, type: type, body: event
+        rescue Faraday::TimeoutError
+          log "error", "Action log action failed: ElasticSearch timeout"
+          log "info", "Action log: (#{type}) #{event.to_json}"
+        end
       else
         log "debug", "Action log: #{type}"
         log "debug", "Action log: (#{type}) #{event.to_json}"

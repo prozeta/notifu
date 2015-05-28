@@ -47,3 +47,6 @@ logging:
     # of <host>:<port> array elements.
     conn:
      - "localhost:9200"
+
+    # Timeout for logging HTTP requests to ElasticSearch
+    timeout: 10
