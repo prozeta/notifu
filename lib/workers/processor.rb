@@ -378,7 +378,7 @@ module Notifu
       get_stashes.each do |stash|
         if stash["path"] == path
           if stash["expire"] < 0
-            if self.event.unstash
+            if self.event.unsilence
               begin
                 Excon.delete "#{self.event.api_endpoint}/stashes/silence/#{self.event.host}/#{self.event.service}"
                 log "info", "Unstashed #{self.event.host}/#{self.event.service} after recovery"
