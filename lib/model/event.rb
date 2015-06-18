@@ -19,6 +19,7 @@ module Notifu
       attr_reader :message
       attr_reader :api_endpoint
       attr_reader :duration
+      attr_reader :unsilence
       attr_reader :refresh
       attr_accessor :process_result
 
@@ -30,6 +31,7 @@ module Notifu
         @aspiring_code = self.code
         @occurrences_trigger ||= 1
         @refresh ||= nil
+        @unsilence ||= true
       end
 
       def group_sla

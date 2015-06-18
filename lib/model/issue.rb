@@ -21,6 +21,7 @@ module Notifu
       attribute :process_result
       attribute :api_endpoint
       attribute :duration
+      attribute :unsilence
       index :notifu_id
       index :host
       index :service

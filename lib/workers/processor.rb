@@ -134,10 +134,15 @@ module Notifu
           else
             result << "issue is silenced" << "IDLE"
           end
-        elsif self.event.action == "resolve" && ! silenced? && self.issue.occurrences_count.to_i >= self.event.occurrences_trigger.to_i
-          result << "recovery of an event"
-          notified = notify!(sla, group)
-          result << "ACTION"
+        elsif self.event.action == "resolve" && self.issue.occurrences_count.to_i >= self.event.occurrences_trigger.to_i
+          if ! silenced?
+            result << "recovery of an event"
+            notified = notify!(sla, group)
+            result << "ACTION"
+          elsif self.event.unsilence
+            result << "recovery of an event (with unsilence)"
+            unsilence!
+          end
         else
           result << "not enough occurrences of this event" << "IDLE"
         end
@@ -270,14 +275,6 @@ module Notifu
     end
 
     def silenced?
-      begin
-        sensu_api = Excon.get "#{self.event.api_endpoint}/stashes"
-        stashes = JSON.parse sensu_api.body
-      rescue
-        stashes = []
-        log "error", "Failed to get stashes #{self.event.api_endpoint}/stashes"
-      end
-
       if self.event.service == "keepalive"
         path = "silence/#{self.event.host}"
       else
@@ -285,7 +282,7 @@ module Notifu
       end
 
       silenced = false
-      stashes.each do |stash|
+      get_stashes.each do |stash|
         silenced = true if stash["path"] == path
       end
 
@@ -355,6 +352,46 @@ module Notifu
     def cleanup!
       if is_ok? && self.issue.action == "resolve"
         Notifu::Cleaner.perform_async(self.issue.notifu_id)
+      end
+    end
+
+    ##
+    # get stashes from Sensu API
+    #
+    def get_stashes
+      return @stashes if @stashes
+      begin
+        sensu_api = Excon.get "#{self.event.api_endpoint}/stashes"
+        @stashes = JSON.parse sensu_api.body
+      rescue
+        @stashes = []
+        log "error", "Failed to get stashes #{self.event.api_endpoint}/stashes"
+      end
+    end
+
+
+    ##
+    # unsilence method
+    #
+    def unsilence!
+      path = "silence/#{self.event.host}/#{self.event.service}"
+      get_stashes.each do |stash|
+        if stash["path"] == path
+          if stash["expire"] < 0
+            if self.event.unstash
+              begin
+                Excon.delete "#{self.event.api_endpoint}/stashes/silence/#{self.event.host}/#{self.event.service}"
+                log "info", "Unstashed #{self.event.host}/#{self.event.service} after recovery"
+              rescue
+                log "warning", "Failed to fetch stashes from Sensu API: #{self.event.api_endpoint}/stashes"
+              end
+            else
+              log "info", "#{self.event.host}/#{self.event.service} left stashed (auto-unstash disabled)"
+            end
+          else
+            log "info", "#{self.event.host}/#{self.event.service} left stashed (auto-unstash doesn't work on checks with defined expiry)"
+          end
+        end
       end
     end
 
