@@ -1,6 +1,6 @@
 require 'sensu/redis'
 require 'digest'
-
+require 'multi_json'
 
 module Sensu::Extension
   class Notifu < Handler
@@ -34,9 +34,18 @@ module Sensu::Extension
     end
 
     def post_init
-      @redis = Sensu::Redis.connect(options)
-      @redis.on_error do |error|
-        @logger.warn('NOTIFU: Redis instance not available on ' + options[:host] + ':' + options[:port])
+
+      if @redis
+        yield(@redis)
+      else
+        Sensu::Redis.connect(options) do |connection|
+          connection.auto_reconnect = false
+          connection.reconnect_on_error = true
+          connection.on_error do |error|
+            @logger.warn(error)
+          end
+          @redis = connection
+        end
       end
       @redis.sadd("queues", "processor")
     end
